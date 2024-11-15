@@ -1,6 +1,8 @@
 import meshio
 import numpy as np
 from abc import ABC, abstractmethod
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 from typing import Union
 
 _ALPHA = 1.0
@@ -167,17 +169,58 @@ class Mesh:
     def cycle(self):
         self.heat_transfer()
         self.update_heat()
-    
 
 msh = Mesh("data/simple.msh")
 msh.find_neighbours()
 
-msh._cells[0].temp = 200
+msh._cells[0].temp = 300
 
 ngh_id = msh._cells[4].neighbours[2]
 
 
-for _ in range(1000):
-    msh.cycle()
 
-print(msh._cells[0].temp)
+print(msh._cells[50].temp)
+print(msh._cells[200].temp)
+class MeshPlotter:
+    def __init__(self, mesh):
+        self.mesh = mesh
+        self.cell_centers = self.calculate_cell_centers()
+        self.temps = []
+
+    def calculate_cell_centers(self):
+        """Calculate the geometric center of each cell."""
+        centers = []
+        for cell in self.mesh._cells:
+            points = [self.mesh._points[point_id] for point_id in cell._points]
+            x_center = sum(point.x() for point in points) / len(points)
+            y_center = sum(point.y() for point in points) / len(points)
+            centers.append((x_center, y_center))
+        return np.array(centers)
+
+    def record_state(self):
+        """Record the current state of the mesh."""
+        temp = [cell.temp for cell in self.mesh._cells]
+        self.temps.append(temp)
+
+    def plot_heatmap(self, time_step=None):
+        """Plot a heatmap of the temperatures"""
+        if time_step is None:
+            time_step = len(self.temps) - 1
+
+        x, y = self.cell_centers[:, 0], self.cell_centers[:, 1]
+        plt.scatter(x, y, c=self.temps[time_step], cmap="hot", s=50)
+        plt.colorbar(label="Temperature")
+        plt.title(f"Temperature Distribution at Timestep {time_step}")
+        plt.xlabel("X")
+        plt.ylabel("Y")
+        plt.show()
+
+
+plotter = MeshPlotter(msh)
+
+for _ in range(6000):
+    msh.cycle()
+    plotter.record_state()
+
+# Plot the heatmap at a specific timestep
+plotter.plot_heatmap(20)
