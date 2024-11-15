@@ -173,12 +173,12 @@ class Mesh:
 msh = Mesh("data/simple.msh")
 msh.find_neighbours()
 
-msh._cells[0].temp = 300
+msh._cells[0].temp = 10000
 
 ngh_id = msh._cells[4].neighbours[2]
 
 
-
+import time
 print(msh._cells[50].temp)
 print(msh._cells[200].temp)
 class MeshPlotter:
@@ -215,6 +215,24 @@ class MeshPlotter:
         plt.ylabel("Y")
         plt.show()
 
+    def animate_heatmap(self, interval=1):
+        """Create an animation of the heatmap over time."""
+        fig, ax = plt.subplots()
+        x, y = self.cell_centers[:, 0], self.cell_centers[:, 1]
+        scatter = ax.scatter(x, y, c=self.temps[0], cmap="hot", s=50)
+        cbar = plt.colorbar(scatter, ax=ax, label="Temperature")
+
+        def update(frame):
+            scatter.set_array(self.temps[frame])  # Update scatter colors
+            scatter.set_clim(vmin=min(self.temps[frame]), vmax=max(self.temps[frame]))
+        
+        # Redraw colorbar with updated limits
+            cbar.update_ticks()
+            ax.set_title(f"Temperature Distribution at Timestep {frame}")
+            return scatter, cbar
+
+        ani = FuncAnimation(fig=fig, func=update, frames=len(self.temps), interval=interval, blit=False)
+        plt.show()
 
 plotter = MeshPlotter(msh)
 
@@ -222,5 +240,5 @@ for _ in range(6000):
     msh.cycle()
     plotter.record_state()
 
-# Plot the heatmap at a specific timestep
-plotter.plot_heatmap(20)
+print(plotter.temps[0][0])
+plotter.animate_heatmap()
