@@ -170,18 +170,8 @@ class Mesh:
         self.heat_transfer()
         self.update_heat()
 
-msh = Mesh("data/simple.msh")
-msh.find_neighbours()
-
-msh._cells[0].temp = 10000
-
-ngh_id = msh._cells[4].neighbours[2]
-
-
-import time
-print(msh._cells[50].temp)
-print(msh._cells[200].temp)
 class MeshPlotter:
+    """Class for creating a animation for heat spread in the mesh class."""
     def __init__(self, mesh):
         self.mesh = mesh
         self.cell_centers = self.calculate_cell_centers()
@@ -215,7 +205,7 @@ class MeshPlotter:
         plt.ylabel("Y")
         plt.show()
 
-    def animate_heatmap(self, interval=1):
+    def animate_heatmap(self, interval=1, output_file = "animation.mp4", save=False):
         """Create an animation of the heatmap over time."""
         fig, ax = plt.subplots()
         x, y = self.cell_centers[:, 0], self.cell_centers[:, 1]
@@ -226,19 +216,22 @@ class MeshPlotter:
             scatter.set_array(self.temps[frame])  # Update scatter colors
             scatter.set_clim(vmin=min(self.temps[frame]), vmax=max(self.temps[frame]))
         
-        # Redraw colorbar with updated limits
             cbar.update_ticks()
             ax.set_title(f"Temperature Distribution at Timestep {frame}")
             return scatter, cbar
 
         ani = FuncAnimation(fig=fig, func=update, frames=len(self.temps), interval=interval, blit=False)
+        if save:
+            ani.save(output_file, writer="ffmpeg", fps=30)
         plt.show()
 
+msh = Mesh("data/simple.msh")
+msh.find_neighbours()
+msh._cells[0].temp = 10000 
 plotter = MeshPlotter(msh)
 
-for _ in range(6000):
+for _ in range(300  ):
     msh.cycle()
     plotter.record_state()
 
-print(plotter.temps[0][0])
-plotter.animate_heatmap()
+plotter.animate_heatmap(save=True)
