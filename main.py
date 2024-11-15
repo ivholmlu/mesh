@@ -1,6 +1,10 @@
 import meshio
+import numpy as np
 from abc import ABC, abstractmethod
 from typing import Union
+
+_ALPHA = 1.0
+_dt = 0.1
 
 class CellFactory:
     """Facotry class for creating cells"""
@@ -35,19 +39,39 @@ class Cell(ABC):
     Args:
         ABC (_type_): 
     """
+    n_cells = 0
+    tot_temp = 0
+
     def __init__(self, id, points = []):
         self._id = id
         self._points = points
         self.neighbours = []
+        Cell.n_cells += 1
+        self.temp = np.random.uniform(23, 27)
+        self._updated_temp = self.temp
+    
+    @classmethod
+    def get_n_cells(cls):
+        return cls.n_cells
     
     def __str__(self):
         return f"{self.__class__} {self._id} with points {self._points} and neighbours {self.neighbours}"
     
     def points(self):
         return set(self._points)
+    
+    def euler_approximation(self, mean_temp):
+        """
+        Approximate the solution of the heat equation using the Euler method.
+        Using temp of neighbours to approximate the temperature of the cell.
+        dx and dy is set to 1
+        """
+        # Neighbours temp is given, calculate new temp in a new variable, to avoid changing the temp of the cell.
+        self._updated_temp = _ALPHA * (mean_temp - self.temp) * _dt + self.temp
+        
 
     @abstractmethod
-    def get_neighbours(self):
+    def get_neighbours(self): #TODO: Remove?
         pass
 
     @abstractmethod
@@ -62,7 +86,7 @@ class Triangle(Cell):
     def __init__(self, id, points):
         super().__init__(id, points)
     
-    def get_neighbours(self, cells):
+    def get_neighbours(self, cells): #TODO: Remove?
         pass
 
     def store_neighbours(self, cells):
@@ -92,7 +116,7 @@ class Line(Cell):
                     break
                 self.neighbours.append(id)
     
-    def get_neighbours(self, cells):
+    def get_neighbours(self, cells): #TODO: Remove?
         pass
 
 class Mesh:
@@ -123,15 +147,37 @@ class Mesh:
     def find_neighbours(self):
         for cell in self._cells:
             cell.store_neighbours(self._cells)
+    
+    def heat_transfer(self):
+        """Calculate each cells neighbouring temp and update new temp."""
+        for cell in self._cells:
+            tot_temp = 0
+            len_temp = len(cell.neighbours)
+            for neighbour in cell.neighbours:
+                tot_temp += self._cells[neighbour].temp
+            mean_temp = tot_temp/len_temp
+
+            cell.euler_approximation(mean_temp)
+
+    def update_heat(self):
+        """Initiating the newly calculated temperature for each cell."""
+        for cell in self._cells:
+            cell.temp = cell._updated_temp
         
+    def cycle(self):
+        self.heat_transfer()
+        self.update_heat()
+    
 
 msh = Mesh("data/simple.msh")
 msh.find_neighbours()
 
+msh._cells[0].temp = 200
+
 ngh_id = msh._cells[4].neighbours[2]
 
-print(msh._cells[4])
-print(msh._cells[189])
-print(msh._cells[222])
-print(msh._cells[226])
-print(msh._cells[224])
+
+for _ in range(1000):
+    msh.cycle()
+
+print(msh._cells[0].temp)
