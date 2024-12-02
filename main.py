@@ -71,7 +71,6 @@ class Cell(ABC):
         # Neighbours temp is given, calculate new temp in a new variable, to avoid changing the temp of the cell.
         self._updated_temp = _ALPHA * (mean_temp - self.temp) * _dt + self.temp
         
-
     @abstractmethod
     def get_neighbours(self): #TODO: Remove?
         pass
@@ -79,7 +78,6 @@ class Cell(ABC):
     @abstractmethod
     def store_neighbours(self, cells):
         pass
-
 
 class Triangle(Cell):
     """
@@ -225,13 +223,14 @@ class MeshPlotter:
             ani.save(output_file, writer="ffmpeg", fps=30)
         plt.show()
 
-msh = Mesh("data/simple.msh")
-msh.find_neighbours()
-msh._cells[0].temp = 10000 
-plotter = MeshPlotter(msh)
+if __name__ == "__main__":
+    msh = Mesh("data/simple.msh")
+    msh.find_neighbours()
+    msh._cells[0].temp = 10000 
+    plotter = MeshPlotter(msh)
 
-for _ in range(300  ):
-    msh.cycle()
-    plotter.record_state()
+    for _ in range(300  ):
+        msh.cycle()
+        plotter.record_state()
 
-plotter.animate_heatmap(save=True)
+    plotter.animate_heatmap(save=True)
